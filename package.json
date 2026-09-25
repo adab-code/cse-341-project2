@@ -1,0 +1,31 @@
+{
+  "name": "cse-341-project2",
+  "version": "1.0.0",
+  "description": "CSE 341 Project 2 - Plant Care REST API (CRUD, validation, error handling)",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js",
+    "swagger": "node swagger.js",
+    "test": "node --test tests/*.test.js"
+  },
+  "keywords": [
+    "cse341",
+    "rest-api",
+    "mongodb",
+    "express",
+    "crud"
+  ],
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "mongodb": "^7.6.0",
+    "swagger-autogen": "^2.23.7",
+    "swagger-ui-express": "^5.0.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}

@@ -1,0 +1,824 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Plant Care API",
+        "description": "REST API to create, read, update and delete houseplants and their care logs, stored in MongoDB.",
+        "version": "1.0.0"
+    },
+    "host": "plant-care-api-bk00.onrender.com",
+    "basePath": "/",
+    "tags": [
+        {
+            "name": "Home",
+            "description": "Base route of the Plant Care API"
+        },
+        {
+            "name": "Plants",
+            "description": "CRUD operations on the plants collection"
+        },
+        {
+            "name": "Care Logs",
+            "description": "CRUD operations on the careLogs collection"
+        }
+    ],
+    "schemes": [
+        "https"
+    ],
+    "paths": {
+        "/": {
+            "get": {
+                "tags": [
+                    "Home"
+                ],
+                "summary": "Welcome message",
+                "description": "Base route of the Plant Care API. Use /plants and /careLogs for the CRUD endpoints.",
+                "produces": [
+                    null
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Returns a welcome message."
+                    }
+                }
+            }
+        },
+        "/plants/{id}": {
+            "get": {
+                "tags": [
+                    "Plants"
+                ],
+                "summary": "Get a plant by id",
+                "description": "Returns a single plant matching the provided id.",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "MongoDB ObjectId of the plant"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Returns the requested plant.",
+                        "schema": {
+                            "$ref": "#/definitions/Plant"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - The id is not a valid ObjectId."
+                    },
+                    "404": {
+                        "description": "Not Found - No plant exists with that id."
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Plants"
+                ],
+                "summary": "Update an existing plant",
+                "description": "Replaces the plant matching the provided id. All nine fields are required because this is a full replacement.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "MongoDB ObjectId of the plant to update"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "The new values for the plant. All nine fields are required. Do not send an _id.",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PlantInput"
+                        },
+                        "example": {
+                            "name": "Monstera",
+                            "species": "Monstera deliciosa",
+                            "category": "Tropical",
+                            "nickname": "Delilah",
+                            "location": "Bedroom",
+                            "lightRequirement": "Medium Light",
+                            "wateringIntervalDays": 10,
+                            "acquiredDate": "2024-03-15",
+                            "notes": "Moved away from the draft."
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - The plant was updated.",
+                        "schema": {
+                            "$ref": "#/definitions/MessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid id, or one or more fields are missing or invalid.",
+                        "schema": {
+                            "$ref": "#/definitions/ValidationError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - No plant exists with that id."
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Plants"
+                ],
+                "summary": "Delete a plant",
+                "description": "Removes the plant matching the provided id. A plant that still has care logs returns 409.",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "MongoDB ObjectId of the plant to delete"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - The plant was deleted.",
+                        "schema": {
+                            "$ref": "#/definitions/MessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - The id is not a valid ObjectId."
+                    },
+                    "404": {
+                        "description": "Not Found - No plant exists with that id."
+                    },
+                    "409": {
+                        "description": "Conflict - The plant still has care logs attached."
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/careLogs/{id}": {
+            "get": {
+                "tags": [
+                    "Care Logs"
+                ],
+                "summary": "Get a care log by id",
+                "description": "Returns a single care log matching the provided id.",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "MongoDB ObjectId of the care log"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Returns the requested care log.",
+                        "schema": {
+                            "$ref": "#/definitions/CareLog"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - The id is not a valid ObjectId."
+                    },
+                    "404": {
+                        "description": "Not Found - No care log exists with that id."
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            },
+            "put": {
+                "tags": [
+                    "Care Logs"
+                ],
+                "summary": "Update an existing care log",
+                "description": "Replaces the care log matching the provided id. All five fields are required because this is a full replacement.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "MongoDB ObjectId of the care log to update"
+                    },
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "The new values for the care log. All five fields are required. Do not send an _id.",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CareLogInput"
+                        },
+                        "example": {
+                            "plantId": "66a1b2c3d4e5f60718293a4b",
+                            "taskType": "Fertilizing",
+                            "performedDate": "2024-06-03",
+                            "durationMinutes": 8,
+                            "notes": "Used half strength liquid fertilizer."
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - The care log was updated.",
+                        "schema": {
+                            "$ref": "#/definitions/MessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - Invalid id, or one or more fields are missing or invalid.",
+                        "schema": {
+                            "$ref": "#/definitions/ValidationError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - No care log exists with that id, or plantId is unknown."
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Care Logs"
+                ],
+                "summary": "Delete a care log",
+                "description": "Removes the care log matching the provided id.",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "type": "string",
+                        "description": "MongoDB ObjectId of the care log to delete"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - The care log was deleted.",
+                        "schema": {
+                            "$ref": "#/definitions/MessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - The id is not a valid ObjectId."
+                    },
+                    "404": {
+                        "description": "Not Found - No care log exists with that id."
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/plants": {
+            "get": {
+                "tags": [
+                    "Plants"
+                ],
+                "summary": "Get all plants",
+                "description": "Returns every plant in the plants collection, sorted by name. Optionally filter with category or lightRequirement.",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "category",
+                        "in": "query",
+                        "description": "Filter by plant category",
+                        "required": false,
+                        "type": "string",
+                        "enum": [
+                            "Succulent",
+                            "Tropical",
+                            "Fern",
+                            "Orchid",
+                            "Cactus",
+                            "Palm",
+                            "Herb",
+                            "Other"
+                        ]
+                    },
+                    {
+                        "name": "lightRequirement",
+                        "in": "query",
+                        "description": "Filter by light requirement",
+                        "required": false,
+                        "type": "string",
+                        "enum": [
+                            "Low Light",
+                            "Medium Light",
+                            "Bright Indirect",
+                            "Direct Sun"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Returns an array of plants.",
+                        "schema": {
+                            "$ref": "#/definitions/PlantList"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Plants"
+                ],
+                "summary": "Create a new plant",
+                "description": "Creates a plant in MongoDB. All nine fields are required. Do not send an _id, MongoDB assigns it.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "The plant to create. All nine fields are required.",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/PlantInput"
+                        },
+                        "example": {
+                            "name": "Monstera",
+                            "species": "Monstera deliciosa",
+                            "category": "Tropical",
+                            "nickname": "Delilah",
+                            "location": "Living room window",
+                            "lightRequirement": "Bright Indirect",
+                            "wateringIntervalDays": 7,
+                            "acquiredDate": "2024-03-15",
+                            "notes": "Leaves started splitting after moving it closer to the window."
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created - Returns the id of the newly created plant.",
+                        "schema": {
+                            "$ref": "#/definitions/IdResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - One or more fields are missing or invalid.",
+                        "schema": {
+                            "$ref": "#/definitions/ValidationError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/careLogs": {
+            "get": {
+                "tags": [
+                    "Care Logs"
+                ],
+                "summary": "Get all care logs",
+                "description": "Returns every care log, newest first. Optionally filter by plantId or taskType.",
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "plantId",
+                        "in": "query",
+                        "description": "Only return care logs for this plant",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "taskType",
+                        "in": "query",
+                        "description": "Filter by task type",
+                        "required": false,
+                        "type": "string",
+                        "enum": [
+                            "Watering",
+                            "Fertilizing",
+                            "Repotting",
+                            "Pruning",
+                            "Pest Treatment",
+                            "Repositioning"
+                        ]
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Returns an array of care logs.",
+                        "schema": {
+                            "$ref": "#/definitions/CareLogList"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - The plantId query parameter is malformed."
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Care Logs"
+                ],
+                "summary": "Create a new care log",
+                "description": "Creates a care log in MongoDB. All five fields are required and plantId must reference an existing plant.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "parameters": [
+                    {
+                        "name": "body",
+                        "in": "body",
+                        "description": "The care log to create. All five fields are required.",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/CareLogInput"
+                        },
+                        "example": {
+                            "plantId": "66a1b2c3d4e5f60718293a4b",
+                            "taskType": "Watering",
+                            "performedDate": "2024-06-01",
+                            "durationMinutes": 12,
+                            "notes": "Top watered until drainage came out."
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created - Returns the id of the newly created care log.",
+                        "schema": {
+                            "$ref": "#/definitions/IdResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request - One or more fields are missing or invalid.",
+                        "schema": {
+                            "$ref": "#/definitions/ValidationError"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found - The plantId does not match an existing plant."
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "PlantInput": {
+            "description": "The nine fields required to create or replace a plant. The _id is generated by MongoDB and must not be sent.",
+            "type": "object",
+            "required": [
+                "name",
+                "species",
+                "category",
+                "nickname",
+                "location",
+                "lightRequirement",
+                "wateringIntervalDays",
+                "acquiredDate",
+                "notes"
+            ],
+            "properties": {
+                "name": {
+                    "type": "string",
+                    "example": "Monstera"
+                },
+                "species": {
+                    "type": "string",
+                    "example": "Monstera deliciosa"
+                },
+                "category": {
+                    "type": "string",
+                    "enum": [
+                        "Succulent",
+                        "Tropical",
+                        "Fern",
+                        "Orchid",
+                        "Cactus",
+                        "Palm",
+                        "Herb",
+                        "Other"
+                    ],
+                    "example": "Tropical"
+                },
+                "nickname": {
+                    "type": "string",
+                    "example": "Delilah"
+                },
+                "location": {
+                    "type": "string",
+                    "example": "Living room window"
+                },
+                "lightRequirement": {
+                    "type": "string",
+                    "enum": [
+                        "Low Light",
+                        "Medium Light",
+                        "Bright Indirect",
+                        "Direct Sun"
+                    ],
+                    "example": "Bright Indirect"
+                },
+                "wateringIntervalDays": {
+                    "type": "integer",
+                    "example": 7
+                },
+                "acquiredDate": {
+                    "type": "string",
+                    "description": "Past date in YYYY-MM-DD format.",
+                    "example": "2024-03-15"
+                },
+                "notes": {
+                    "type": "string",
+                    "example": "Leaves started splitting after moving it closer to the window."
+                }
+            }
+        },
+        "Plant": {
+            "description": "A stored plant, including the _id that MongoDB assigned on insert.",
+            "type": "object",
+            "required": [
+                "name",
+                "species",
+                "category",
+                "nickname",
+                "location",
+                "lightRequirement",
+                "wateringIntervalDays",
+                "acquiredDate",
+                "notes"
+            ],
+            "properties": {
+                "_id": {
+                    "type": "string",
+                    "description": "Assigned by MongoDB when the plant is created. Not sent by the client.",
+                    "example": "6ab6bd0406634384d69bc582"
+                },
+                "name": {
+                    "type": "string",
+                    "example": "Monstera"
+                },
+                "species": {
+                    "type": "string",
+                    "example": "Monstera deliciosa"
+                },
+                "category": {
+                    "type": "string",
+                    "enum": [
+                        "Succulent",
+                        "Tropical",
+                        "Fern",
+                        "Orchid",
+                        "Cactus",
+                        "Palm",
+                        "Herb",
+                        "Other"
+                    ],
+                    "example": "Tropical"
+                },
+                "nickname": {
+                    "type": "string",
+                    "example": "Delilah"
+                },
+                "location": {
+                    "type": "string",
+                    "example": "Living room window"
+                },
+                "lightRequirement": {
+                    "type": "string",
+                    "enum": [
+                        "Low Light",
+                        "Medium Light",
+                        "Bright Indirect",
+                        "Direct Sun"
+                    ],
+                    "example": "Bright Indirect"
+                },
+                "wateringIntervalDays": {
+                    "type": "integer",
+                    "example": 7
+                },
+                "acquiredDate": {
+                    "type": "string",
+                    "example": "2024-03-15"
+                },
+                "notes": {
+                    "type": "string",
+                    "example": "Leaves started splitting after moving it closer to the window."
+                }
+            }
+        },
+        "PlantList": {
+            "description": "A list of stored plants.",
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/Plant"
+            }
+        },
+        "CareLogInput": {
+            "description": "The five fields required to create or replace a care log. plantId must reference an existing plant.",
+            "type": "object",
+            "required": [
+                "plantId",
+                "taskType",
+                "performedDate",
+                "durationMinutes",
+                "notes"
+            ],
+            "properties": {
+                "plantId": {
+                    "type": "string",
+                    "description": "ObjectId of the plant this log belongs to.",
+                    "example": "6ab6bd0406634384d69bc582"
+                },
+                "taskType": {
+                    "type": "string",
+                    "enum": [
+                        "Watering",
+                        "Fertilizing",
+                        "Repotting",
+                        "Pruning",
+                        "Pest Treatment",
+                        "Repositioning"
+                    ],
+                    "example": "Watering"
+                },
+                "performedDate": {
+                    "type": "string",
+                    "description": "Past date in YYYY-MM-DD format.",
+                    "example": "2024-06-01"
+                },
+                "durationMinutes": {
+                    "type": "integer",
+                    "example": 12
+                },
+                "notes": {
+                    "type": "string",
+                    "example": "Top watered until drainage came out."
+                }
+            }
+        },
+        "CareLog": {
+            "description": "A stored care log, including the _id that MongoDB assigned on insert.",
+            "type": "object",
+            "required": [
+                "plantId",
+                "taskType",
+                "performedDate",
+                "durationMinutes",
+                "notes"
+            ],
+            "properties": {
+                "_id": {
+                    "type": "string",
+                    "description": "Assigned by MongoDB when the care log is created. Not sent by the client.",
+                    "example": "6ab6bd0506634384d69bc583"
+                },
+                "plantId": {
+                    "type": "string",
+                    "example": "6ab6bd0406634384d69bc582"
+                },
+                "taskType": {
+                    "type": "string",
+                    "enum": [
+                        "Watering",
+                        "Fertilizing",
+                        "Repotting",
+                        "Pruning",
+                        "Pest Treatment",
+                        "Repositioning"
+                    ],
+                    "example": "Watering"
+                },
+                "performedDate": {
+                    "type": "string",
+                    "example": "2024-06-01"
+                },
+                "durationMinutes": {
+                    "type": "integer",
+                    "example": 12
+                },
+                "notes": {
+                    "type": "string",
+                    "example": "Top watered until drainage came out."
+                }
+            }
+        },
+        "CareLogList": {
+            "description": "A list of stored care logs.",
+            "type": "array",
+            "items": {
+                "$ref": "#/definitions/CareLog"
+            }
+        },
+        "IdResponse": {
+            "description": "The _id of a newly created document, assigned by MongoDB.",
+            "type": "object",
+            "properties": {
+                "_id": {
+                    "type": "string",
+                    "example": "6ab6bd0406634384d69bc582"
+                }
+            }
+        },
+        "MessageResponse": {
+            "description": "Confirmation that the requested change was applied.",
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "Plant updated successfully."
+                }
+            }
+        },
+        "ValidationError": {
+            "description": "Returned when the request body fails validation.",
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "Validation failed."
+                },
+                "details": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    },
+                    "example": [
+                        "category is required.",
+                        "wateringIntervalDays must be a whole number between 1 and 365."
+                    ]
+                }
+            }
+        },
+        "NotFoundError": {
+            "description": "Returned when no document matches the requested id.",
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "No plant found with id 6ab6bd0406634384d69bc582."
+                }
+            }
+        }
+    }
+}

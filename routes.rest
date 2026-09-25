@@ -1,0 +1,88 @@
+### Plant Care API - request collection for testing with the VS Code REST Client extension.
+
+@baseUrl = http://localhost:3001
+
+### Home
+GET {{baseUrl}}/
+
+### Plants
+# Get all plants
+GET {{baseUrl}}/plants
+
+# Get only tropical plants
+GET {{baseUrl}}/plants?category=Tropical
+
+# Get a plant by id
+GET {{baseUrl}}/plants/66a1b2c3d4e5f60718293a4b
+
+# Create a plant
+POST {{baseUrl}}/plants
+Content-Type: application/json
+
+{
+    "name": "Monstera",
+    "species": "Monstera deliciosa",
+    "category": "Tropical",
+    "nickname": "Delilah",
+    "location": "Living room window",
+    "lightRequirement": "Bright Indirect",
+    "wateringIntervalDays": 7,
+    "acquiredDate": "2024-03-15",
+    "notes": "Leaves started splitting after moving it closer to the window."
+}
+
+# Update a plant (all nine fields are required)
+PUT {{baseUrl}}/plants/66a1b2c3d4e5f60718293a4b
+Content-Type: application/json
+
+{
+    "name": "Monstera",
+    "species": "Monstera deliciosa",
+    "category": "Tropical",
+    "nickname": "Delilah",
+    "location": "Bedroom",
+    "lightRequirement": "Medium Light",
+    "wateringIntervalDays": 10,
+    "acquiredDate": "2024-03-15",
+    "notes": "Moved away from the draft."
+}
+
+# Delete a plant
+DELETE {{baseUrl}}/plants/66a1b2c3d4e5f60718293a4b
+
+### Care logs
+# Get all care logs
+GET {{baseUrl}}/careLogs
+
+# Get the care logs of one plant
+GET {{baseUrl}}/careLogs?plantId=66a1b2c3d4e5f60718293a4b
+
+# Get a care log by id
+GET {{baseUrl}}/careLogs/66a1b2c3d4e5f60718293a4c
+
+# Create a care log
+POST {{baseUrl}}/careLogs
+Content-Type: application/json
+
+{
+    "plantId": "66a1b2c3d4e5f60718293a4b",
+    "taskType": "Watering",
+    "performedDate": "2025-06-01",
+    "durationMinutes": 12,
+    "notes": "Top watered until drainage came out."
+}
+
+# Update a care log
+PUT {{baseUrl}}/careLogs/66a1b2c3d4e5f60718293a4c
+Content-Type: application/json
+
+{
+    "plantId": "66a1b2c3d4e5f60718293a4b",
+    "taskType": "Fertilizing",
+    "performedDate": "2025-06-03",
+    "durationMinutes": 8,
+    "notes": "Used half strength liquid fertilizer."
+}
+
+# Delete a care log
+DELETE {{baseUrl}}/careLogs/66a1b2c3d4e5f60718293a4c

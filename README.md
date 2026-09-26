@@ -6,6 +6,10 @@ MongoDB. Built with Node.js, Express and the native MongoDB driver.
 **Status:** Part 1 complete (CRUD, validation and error handling). Authentication
 with OAuth is added in Part 2 during Week 04.
 
+**Repository:** <https://github.com/adab-code/cse-341-project2>
+**Live deployment:** <https://project2-shmi.onrender.com>
+**Interactive documentation:** <https://project2-shmi.onrender.com/api-docs>
+
 ## Database
 
 The project uses the same MongoDB Atlas cluster as Project 1 but its own

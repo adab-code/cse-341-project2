@@ -5,7 +5,7 @@
         "description": "REST API to create, read, update and delete houseplants and their care logs, stored in MongoDB.",
         "version": "1.0.0"
     },
-    "host": "plant-care-api-bk00.onrender.com",
+    "host": "project2-shmi.onrender.com",
     "basePath": "/",
     "tags": [
         {

@@ -5,6 +5,21 @@
 ### Home
 GET {{baseUrl}}/
 
+### Auth
+# Log in. This one has to be opened in a browser, it redirects to GitHub.
+# GitHub only accepts the callback URL registered on the OAuth app, which for
+# this project is the deployed one: https://project2-shmi.onrender.com/auth/github
+GET {{baseUrl}}/auth/github
+
+# Who is logged in right now (401 when nobody is)
+GET {{baseUrl}}/auth/me
+
+# Log out from the API docs, answers JSON
+POST {{baseUrl}}/auth/logout
+
+# Log out from a browser, redirects to the home page
+GET {{baseUrl}}/auth/logout
+
 ### Plants
 # Get all plants
 GET {{baseUrl}}/plants
@@ -15,7 +30,7 @@ GET {{baseUrl}}/plants?category=Tropical
 # Get a plant by id
 GET {{baseUrl}}/plants/66a1b2c3d4e5f60718293a4b
 
-# Create a plant
+# Create a plant (needs a session)
 POST {{baseUrl}}/plants
 Content-Type: application/json
 
@@ -31,7 +46,7 @@ Content-Type: application/json
     "notes": "Leaves started splitting after moving it closer to the window."
 }
 
-# Update a plant (all nine fields are required)
+# Update a plant (all nine fields are required, needs a session)
 PUT {{baseUrl}}/plants/66a1b2c3d4e5f60718293a4b
 Content-Type: application/json
 
@@ -47,7 +62,7 @@ Content-Type: application/json
     "notes": "Moved away from the draft."
 }
 
-# Delete a plant
+# Delete a plant (needs a session)
 DELETE {{baseUrl}}/plants/66a1b2c3d4e5f60718293a4b
 
 ### Care logs
@@ -60,7 +75,7 @@ GET {{baseUrl}}/careLogs?plantId=66a1b2c3d4e5f60718293a4b
 # Get a care log by id
 GET {{baseUrl}}/careLogs/66a1b2c3d4e5f60718293a4c
 
-# Create a care log
+# Create a care log (needs a session)
 POST {{baseUrl}}/careLogs
 Content-Type: application/json
 
@@ -72,7 +87,7 @@ Content-Type: application/json
     "notes": "Top watered until drainage came out."
 }
 
-# Update a care log
+# Update a care log (all five fields are required, needs a session)
 PUT {{baseUrl}}/careLogs/66a1b2c3d4e5f60718293a4c
 Content-Type: application/json
 
@@ -84,5 +99,5 @@ Content-Type: application/json
     "notes": "Used half strength liquid fertilizer."
 }
 
-# Delete a care log
+# Delete a care log (needs a session)
 DELETE {{baseUrl}}/careLogs/66a1b2c3d4e5f60718293a4c

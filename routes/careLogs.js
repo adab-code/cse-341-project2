@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const careLogsController = require('../controllers/careLogs');
+const { requireAuth } = require('../auth/middleware');
 
 router.get('/', (req, res, next) => {
     /*
@@ -33,13 +34,14 @@ router.get('/:id', (req, res, next) => {
     careLogsController.getCareLogById(req, res, next);
 });
 
-router.post('/', (req, res, next) => {
+router.post('/', requireAuth, (req, res, next) => {
     /*
     #swagger.tags = ['Care Logs']
     #swagger.summary = 'Create a new care log'
-    #swagger.description = 'Creates a care log in MongoDB. All five fields are required and plantId must reference an existing plant.'
+    #swagger.description = 'Creates a care log in MongoDB. All five fields are required and plantId must reference an existing plant. Requires a session, log in with GitHub first.'
     #swagger.consumes = ['application/json']
     #swagger.produces = ['application/json']
+    #swagger.security = [{ sessionCookie: [] }]
     #swagger.parameters['body'] = {
         in: 'body',
         description: 'The care log to create. All five fields are required.',
@@ -55,19 +57,21 @@ router.post('/', (req, res, next) => {
     }
     #swagger.responses[201] = { description: 'Created - Returns the id of the newly created care log.', schema: { $ref: '#/definitions/IdResponse' } }
     #swagger.responses[400] = { description: 'Bad Request - One or more fields are missing or invalid.', schema: { $ref: '#/definitions/ValidationError' } }
+    #swagger.responses[401] = { description: 'Unauthorized - There is no active session.', schema: { $ref: '#/definitions/AuthError' } }
     #swagger.responses[404] = { description: 'Not Found - The plantId does not match an existing plant.' }
     #swagger.responses[500] = { description: 'Internal Server Error' }
     */
     careLogsController.createCareLog(req, res, next);
 });
 
-router.put('/:id', (req, res, next) => {
+router.put('/:id', requireAuth, (req, res, next) => {
     /*
     #swagger.tags = ['Care Logs']
     #swagger.summary = 'Update an existing care log'
-    #swagger.description = 'Replaces the care log matching the provided id. All five fields are required because this is a full replacement.'
+    #swagger.description = 'Replaces the care log matching the provided id. All five fields are required because this is a full replacement. Requires a session, log in with GitHub first.'
     #swagger.consumes = ['application/json']
     #swagger.produces = ['application/json']
+    #swagger.security = [{ sessionCookie: [] }]
     #swagger.parameters['id'] = { in: 'path', description: 'MongoDB ObjectId of the care log to update', required: true, type: 'string' }
     #swagger.parameters['body'] = {
         in: 'body',
@@ -84,21 +88,24 @@ router.put('/:id', (req, res, next) => {
     }
     #swagger.responses[200] = { description: 'OK - The care log was updated.', schema: { $ref: '#/definitions/MessageResponse' } }
     #swagger.responses[400] = { description: 'Bad Request - Invalid id, or one or more fields are missing or invalid.', schema: { $ref: '#/definitions/ValidationError' } }
+    #swagger.responses[401] = { description: 'Unauthorized - There is no active session.', schema: { $ref: '#/definitions/AuthError' } }
     #swagger.responses[404] = { description: 'Not Found - No care log exists with that id, or plantId is unknown.' }
     #swagger.responses[500] = { description: 'Internal Server Error' }
     */
     careLogsController.updateCareLog(req, res, next);
 });
 
-router.delete('/:id', (req, res, next) => {
+router.delete('/:id', requireAuth, (req, res, next) => {
     /*
     #swagger.tags = ['Care Logs']
     #swagger.summary = 'Delete a care log'
-    #swagger.description = 'Removes the care log matching the provided id.'
+    #swagger.description = 'Removes the care log matching the provided id. Requires a session, log in with GitHub first.'
     #swagger.produces = ['application/json']
+    #swagger.security = [{ sessionCookie: [] }]
     #swagger.parameters['id'] = { in: 'path', description: 'MongoDB ObjectId of the care log to delete', required: true, type: 'string' }
     #swagger.responses[200] = { description: 'OK - The care log was deleted.', schema: { $ref: '#/definitions/MessageResponse' } }
     #swagger.responses[400] = { description: 'Bad Request - The id is not a valid ObjectId.' }
+    #swagger.responses[401] = { description: 'Unauthorized - There is no active session.', schema: { $ref: '#/definitions/AuthError' } }
     #swagger.responses[404] = { description: 'Not Found - No care log exists with that id.' }
     #swagger.responses[500] = { description: 'Internal Server Error' }
     */

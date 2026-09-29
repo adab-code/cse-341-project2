@@ -2,7 +2,7 @@
     "swagger": "2.0",
     "info": {
         "title": "Plant Care API",
-        "description": "REST API to create, read, update and delete houseplants and their care logs, stored in MongoDB.",
+        "description": "REST API to create, read, update and delete houseplants and their care logs, stored in MongoDB. Reading is public, every route that changes data requires a session started with GitHub OAuth.",
         "version": "1.0.0"
     },
     "host": "project2-shmi.onrender.com",
@@ -11,6 +11,10 @@
         {
             "name": "Home",
             "description": "Base route of the Plant Care API"
+        },
+        {
+            "name": "Auth",
+            "description": "Log in and log out with GitHub using OAuth"
         },
         {
             "name": "Plants",
@@ -24,20 +28,141 @@
     "schemes": [
         "https"
     ],
+    "securityDefinitions": {
+        "sessionCookie": {
+            "type": "apiKey",
+            "in": "cookie",
+            "name": "plantcare.sid",
+            "description": "Session cookie set by GET /auth/github. Log in from a browser first, then every request from this page carries it. The protected routes below answer 401 without it."
+        }
+    },
     "paths": {
         "/": {
             "get": {
                 "tags": [
                     "Home"
                 ],
-                "summary": "Welcome message",
-                "description": "Base route of the Plant Care API. Use /plants and /careLogs for the CRUD endpoints.",
+                "summary": "Welcome message and session status",
+                "description": "Base route of the Plant Care API. It also says whether there is an active session, and points to the log in, log out and documentation links.",
                 "produces": [
                     null
                 ],
                 "responses": {
                     "200": {
-                        "description": "OK - Returns a welcome message."
+                        "description": "OK - Returns a welcome message with the current session status."
+                    }
+                }
+            }
+        },
+        "/auth/github": {
+            "get": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Log in with GitHub",
+                "description": "Starts the OAuth handshake. GitHub sends the browser back to /auth/github/callback, which stores the user in the session and returns to the home page. Use it from a browser, it answers with a redirect to github.com.",
+                "produces": [
+                    "text/html"
+                ],
+                "responses": {
+                    "302": {
+                        "description": "Redirect to the GitHub authorization page."
+                    },
+                    "400": {
+                        "description": "Bad Request - This server is not the one registered as the OAuth callback."
+                    },
+                    "503": {
+                        "description": "Service Unavailable - The GitHub OAuth credentials are not configured on the server."
+                    }
+                }
+            }
+        },
+        "/auth/github/callback": {
+            "get": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "GitHub OAuth callback",
+                "description": "The URL GitHub redirects to after the user authorizes the app. It saves the profile in the users collection, opens the session and redirects to the home page. Not called by hand.",
+                "produces": [
+                    "text/html"
+                ],
+                "responses": {
+                    "302": {
+                        "description": "Redirect to the home page once the session is open."
+                    },
+                    "401": {
+                        "description": "Unauthorized - GitHub did not return a valid authorization code."
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/auth/logout": {
+            "get": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Log out",
+                "description": "Closes the session, clears the session cookie and redirects to the home page.",
+                "produces": [
+                    "text/html"
+                ],
+                "responses": {
+                    "302": {
+                        "description": "Redirect to the home page."
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Log out and answer with JSON",
+                "description": "Same as GET /auth/logout but returns JSON, which is the one to use from the Swagger docs.",
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - The session was closed.",
+                        "schema": {
+                            "$ref": "#/definitions/MessageResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error"
+                    }
+                }
+            }
+        },
+        "/auth/me": {
+            "get": {
+                "tags": [
+                    "Auth"
+                ],
+                "summary": "Get the logged in user",
+                "description": "Returns the GitHub profile stored for the current session. Answers 401 when nobody is logged in.",
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK - Returns the session user.",
+                        "schema": {
+                            "$ref": "#/definitions/SessionUser"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized - There is no active session.",
+                        "schema": {
+                            "$ref": "#/definitions/AuthError"
+                        }
                     }
                 }
             }
@@ -84,7 +209,7 @@
                     "Plants"
                 ],
                 "summary": "Update an existing plant",
-                "description": "Replaces the plant matching the provided id. All nine fields are required because this is a full replacement.",
+                "description": "Replaces the plant matching the provided id. All nine fields are required because this is a full replacement. Requires a session, log in with GitHub first.",
                 "consumes": [
                     "application/json"
                 ],
@@ -133,20 +258,31 @@
                             "$ref": "#/definitions/ValidationError"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized - There is no active session.",
+                        "schema": {
+                            "$ref": "#/definitions/AuthError"
+                        }
+                    },
                     "404": {
                         "description": "Not Found - No plant exists with that id."
                     },
                     "500": {
                         "description": "Internal Server Error"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sessionCookie": []
+                    }
+                ]
             },
             "delete": {
                 "tags": [
                     "Plants"
                 ],
                 "summary": "Delete a plant",
-                "description": "Removes the plant matching the provided id. A plant that still has care logs returns 409.",
+                "description": "Removes the plant matching the provided id. A plant that still has care logs returns 409. Requires a session, log in with GitHub first.",
                 "produces": [
                     "application/json"
                 ],
@@ -169,6 +305,12 @@
                     "400": {
                         "description": "Bad Request - The id is not a valid ObjectId."
                     },
+                    "401": {
+                        "description": "Unauthorized - There is no active session.",
+                        "schema": {
+                            "$ref": "#/definitions/AuthError"
+                        }
+                    },
                     "404": {
                         "description": "Not Found - No plant exists with that id."
                     },
@@ -178,7 +320,12 @@
                     "500": {
                         "description": "Internal Server Error"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sessionCookie": []
+                    }
+                ]
             }
         },
         "/careLogs/{id}": {
@@ -223,7 +370,7 @@
                     "Care Logs"
                 ],
                 "summary": "Update an existing care log",
-                "description": "Replaces the care log matching the provided id. All five fields are required because this is a full replacement.",
+                "description": "Replaces the care log matching the provided id. All five fields are required because this is a full replacement. Requires a session, log in with GitHub first.",
                 "consumes": [
                     "application/json"
                 ],
@@ -268,20 +415,31 @@
                             "$ref": "#/definitions/ValidationError"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized - There is no active session.",
+                        "schema": {
+                            "$ref": "#/definitions/AuthError"
+                        }
+                    },
                     "404": {
                         "description": "Not Found - No care log exists with that id, or plantId is unknown."
                     },
                     "500": {
                         "description": "Internal Server Error"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sessionCookie": []
+                    }
+                ]
             },
             "delete": {
                 "tags": [
                     "Care Logs"
                 ],
                 "summary": "Delete a care log",
-                "description": "Removes the care log matching the provided id.",
+                "description": "Removes the care log matching the provided id. Requires a session, log in with GitHub first.",
                 "produces": [
                     "application/json"
                 ],
@@ -304,13 +462,24 @@
                     "400": {
                         "description": "Bad Request - The id is not a valid ObjectId."
                     },
+                    "401": {
+                        "description": "Unauthorized - There is no active session.",
+                        "schema": {
+                            "$ref": "#/definitions/AuthError"
+                        }
+                    },
                     "404": {
                         "description": "Not Found - No care log exists with that id."
                     },
                     "500": {
                         "description": "Internal Server Error"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sessionCookie": []
+                    }
+                ]
             }
         },
         "/plants": {
@@ -372,7 +541,7 @@
                     "Plants"
                 ],
                 "summary": "Create a new plant",
-                "description": "Creates a plant in MongoDB. All nine fields are required. Do not send an _id, MongoDB assigns it.",
+                "description": "Creates a plant in MongoDB. All nine fields are required. Do not send an _id, MongoDB assigns it. Requires a session, log in with GitHub first.",
                 "consumes": [
                     "application/json"
                 ],
@@ -414,10 +583,21 @@
                             "$ref": "#/definitions/ValidationError"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized - There is no active session.",
+                        "schema": {
+                            "$ref": "#/definitions/AuthError"
+                        }
+                    },
                     "500": {
                         "description": "Internal Server Error"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sessionCookie": []
+                    }
+                ]
             }
         },
         "/careLogs": {
@@ -474,7 +654,7 @@
                     "Care Logs"
                 ],
                 "summary": "Create a new care log",
-                "description": "Creates a care log in MongoDB. All five fields are required and plantId must reference an existing plant.",
+                "description": "Creates a care log in MongoDB. All five fields are required and plantId must reference an existing plant. Requires a session, log in with GitHub first.",
                 "consumes": [
                     "application/json"
                 ],
@@ -512,13 +692,24 @@
                             "$ref": "#/definitions/ValidationError"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized - There is no active session.",
+                        "schema": {
+                            "$ref": "#/definitions/AuthError"
+                        }
+                    },
                     "404": {
                         "description": "Not Found - The plantId does not match an existing plant."
                     },
                     "500": {
                         "description": "Internal Server Error"
                     }
-                }
+                },
+                "security": [
+                    {
+                        "sessionCookie": []
+                    }
+                ]
             }
         }
     },
@@ -817,6 +1008,87 @@
                 "error": {
                     "type": "string",
                     "example": "No plant found with id 6ab6bd0406634384d69bc582."
+                }
+            }
+        },
+        "SessionUser": {
+            "description": "The GitHub profile behind the current session, as stored in the users collection.",
+            "type": "object",
+            "properties": {
+                "authenticated": {
+                    "type": "boolean",
+                    "example": true
+                },
+                "user": {
+                    "$ref": "#/definitions/User"
+                }
+            }
+        },
+        "User": {
+            "description": "A user document. It is created the first time the person logs in with GitHub.",
+            "type": "object",
+            "required": [
+                "githubId",
+                "username",
+                "displayName"
+            ],
+            "properties": {
+                "_id": {
+                    "type": "string",
+                    "description": "Assigned by MongoDB when the user is created. Not sent by the client.",
+                    "example": "6ab6bd0606634384d69bc584"
+                },
+                "githubId": {
+                    "type": "string",
+                    "description": "Numeric id GitHub gave the account. This is the only value kept in the session.",
+                    "example": "12345678"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "adab-code"
+                },
+                "displayName": {
+                    "type": "string",
+                    "example": "Ada"
+                },
+                "email": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "Null when the person hides their address or the user:email scope was not granted.",
+                    "example": "ada@example.com"
+                },
+                "avatarUrl": {
+                    "type": "string",
+                    "nullable": true,
+                    "example": "https://avatars.githubusercontent.com/u/12345678"
+                },
+                "profileUrl": {
+                    "type": "string",
+                    "example": "https://github.com/adab-code"
+                },
+                "loginCount": {
+                    "type": "integer",
+                    "example": 3
+                },
+                "createdAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2026-09-29T15:04:05.000Z"
+                },
+                "lastLoginAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "example": "2026-09-29T18:22:41.000Z"
+                }
+            }
+        },
+        "AuthError": {
+            "description": "Returned when a protected route is called without an active session.",
+            "type": "object",
+            "properties": {
+                "error": {
+                    "type": "string",
+                    "example": "Authentication required. Log in with GitHub at /auth/github and try again."
                 }
             }
         }

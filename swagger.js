@@ -11,16 +11,20 @@ const doc = {
     info: {
         title: 'Plant Care API',
         description:
-            'REST API to create, read, update and delete houseplants and their care logs, stored in MongoDB.',
+            'REST API to create, read, update and delete houseplants and their care logs, stored in MongoDB. Reading is public, every route that changes data requires a session started with GitHub OAuth.',
         version: '1.0.0',
     },
-    host: 'plant-care-api-bk00.onrender.com',
+    host: 'project2-shmi.onrender.com',
     basePath: '/',
     schemes: ['https'],
     tags: [
         {
             name: 'Home',
             description: 'Base route of the Plant Care API',
+        },
+        {
+            name: 'Auth',
+            description: 'Log in and log out with GitHub using OAuth',
         },
         {
             name: 'Plants',
@@ -31,6 +35,18 @@ const doc = {
             description: 'CRUD operations on the careLogs collection',
         },
     ],
+    // Passport stores the GitHub id of the user in a server side session, so the
+    // browser proves who it is with the session cookie. Swagger UI sends it
+    // automatically for every request made from this page.
+    securityDefinitions: {
+        sessionCookie: {
+            type: 'apiKey',
+            in: 'cookie',
+            name: 'plantcare.sid',
+            description:
+                'Session cookie set by GET /auth/github. Log in from a browser first, then every request from this page carries it. The protected routes below answer 401 without it.',
+        },
+    },
     '@definitions': {
         PlantInput: {
             description:
@@ -197,6 +213,54 @@ const doc = {
             type: 'object',
             properties: {
                 error: { type: 'string', example: 'No plant found with id 6ab6bd0406634384d69bc582.' },
+            },
+        },
+        SessionUser: {
+            description: 'The GitHub profile behind the current session, as stored in the users collection.',
+            type: 'object',
+            properties: {
+                authenticated: { type: 'boolean', example: true },
+                user: { $ref: '#/definitions/User' },
+            },
+        },
+        User: {
+            description: 'A user document. It is created the first time the person logs in with GitHub.',
+            type: 'object',
+            required: ['githubId', 'username', 'displayName'],
+            properties: {
+                _id: {
+                    type: 'string',
+                    description: 'Assigned by MongoDB when the user is created. Not sent by the client.',
+                    example: '6ab6bd0606634384d69bc584',
+                },
+                githubId: {
+                    type: 'string',
+                    description: 'Numeric id GitHub gave the account. This is the only value kept in the session.',
+                    example: '12345678',
+                },
+                username: { type: 'string', example: 'adab-code' },
+                displayName: { type: 'string', example: 'Ada' },
+                email: {
+                    type: 'string',
+                    nullable: true,
+                    description: 'Null when the person hides their address or the user:email scope was not granted.',
+                    example: 'ada@example.com',
+                },
+                avatarUrl: { type: 'string', nullable: true, example: 'https://avatars.githubusercontent.com/u/12345678' },
+                profileUrl: { type: 'string', example: 'https://github.com/adab-code' },
+                loginCount: { type: 'integer', example: 3 },
+                createdAt: { type: 'string', format: 'date-time', example: '2026-09-29T15:04:05.000Z' },
+                lastLoginAt: { type: 'string', format: 'date-time', example: '2026-09-29T18:22:41.000Z' },
+            },
+        },
+        AuthError: {
+            description: 'Returned when a protected route is called without an active session.',
+            type: 'object',
+            properties: {
+                error: {
+                    type: 'string',
+                    example: 'Authentication required. Log in with GitHub at /auth/github and try again.',
+                },
             },
         },
     },

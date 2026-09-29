@@ -6,7 +6,7 @@
 GET {{baseUrl}}/
 
 ### Auth
-# Log in. This one has to be opened in a browser, it redirects to GitHub.
+# Log in. This one has to be opened in a browser, it sends you to GitHub.
 # GitHub only accepts the callback URL registered on the OAuth app, which for
 # this project is the deployed one: https://project2-shmi.onrender.com/auth/github
 GET {{baseUrl}}/auth/github
@@ -19,6 +19,10 @@ POST {{baseUrl}}/auth/logout
 
 # Log out from a browser, redirects to the home page
 GET {{baseUrl}}/auth/logout
+
+# The write requests below answer 401 with this client: the OAuth session lives
+# in the browser cookie, so a REST client has to log in through a browser first
+# and the session is not shared. Use the deployed API docs to exercise them.
 
 ### Plants
 # Get all plants

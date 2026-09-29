@@ -73,7 +73,7 @@ GitHub, and answers `401` without one.
 | Method | Path | Auth | Description |
 | --- | --- | --- | --- |
 | `GET` | `/` | public | Welcome message and session status |
-| `GET` | `/auth/github` | public | Starts the GitHub OAuth handshake (redirect) |
+| `GET` | `/auth/github` | public | Opens the GitHub authorization page (JSON URL for Swagger UI) |
 | `GET` | `/auth/github/callback` | public | Where GitHub sends the browser back (redirect) |
 | `GET` | `/auth/me` | public | The logged in user, or `401` |
 | `POST` | `/auth/logout` | public | Closes the session, answers JSON |
@@ -96,11 +96,14 @@ Interactive documentation: **`/api-docs`**
 Login uses the OAuth 2.0 authorization code flow with Passport and GitHub. No
 password is ever typed into this app or written to MongoDB.
 
-1. `GET /auth/github` sends the browser to GitHub with the `read:user` and
-   `user:email` scopes.
+1. `GET /auth/github` takes the browser to GitHub with the `read:user` and
+   `user:email` scopes. The route answers `200` with a small page that forwards
+   on its own, because a `302` to another origin makes Swagger UI report a CORS
+   failure; called from Swagger UI or curl it answers the same URL as JSON.
 2. The person authorizes the app and GitHub redirects to
    `GET /auth/github/callback`, which has to match the **Authorization callback
-   URL** of the GitHub OAuth app character for character.
+   URL** of the GitHub OAuth app character for character. A handshake that fails
+   comes back to `/?login=failed` instead of an error page.
 3. The callback saves the profile in `users`, keeps only the GitHub id in the
    session and redirects to the home page.
 4. Passport puts the user back on `req.user` on every following request, and

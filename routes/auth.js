@@ -1,8 +1,32 @@
 const express = require('express');
 const router = express.Router();
 
-const { passport, isEnabled, SCOPES } = require('../auth/passport');
+const { passport, isEnabled, getLoginUrl, SCOPES } = require('../auth/passport');
 const { COOKIE_NAME } = require('../auth/session');
+
+/**
+ * Page shown to a browser: it sends the visitor straight to GitHub and keeps a
+ * link around in case the automatic redirect is blocked.
+ * @param {string} loginUrl GitHub authorization URL
+ * @returns {string} an HTML document
+ */
+const loginPage = (loginUrl) => `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Plant Care API - log in</title>
+<meta http-equiv="refresh" content="0; url=${loginUrl}">
+<style>
+    body { font-family: system-ui, sans-serif; margin: 4rem auto; max-width: 34rem; line-height: 1.5; }
+    a { color: #0969da; }
+</style>
+</head>
+<body>
+<h1>Plant Care API</h1>
+<p>Sending you to GitHub to authorize the app. It comes back to <code>/auth/github/callback</code> and opens your session.</p>
+<p><a href="${loginUrl}">Continue to GitHub</a></p>
+</body>
+</html>`;
 
 /**
  * GitHub only accepts the one callback URL registered on the OAuth app, so a
@@ -18,6 +42,14 @@ const registeredHost = () => {
         return null;
     }
 };
+
+/**
+ * True when the request is a browser navigating to the page, which sends
+ * 'text/html' in Accept. Swagger UI and curl do not, and get JSON instead.
+ * @param {object} req Express request
+ * @returns {boolean}
+ */
+const isBrowserNavigation = (req) => String(req.headers.accept || '').toLowerCase().includes('text/html');
 
 /**
  * Close the session: drop the passport data and delete the server side record.
@@ -43,9 +75,9 @@ router.get('/github', (req, res, next) => {
     /*
     #swagger.tags = ['Auth']
     #swagger.summary = 'Log in with GitHub'
-    #swagger.description = 'Starts the OAuth handshake. GitHub sends the browser back to /auth/github/callback, which stores the user in the session and returns to the home page. Use it from a browser, it answers with a redirect to github.com.'
-    #swagger.produces = ['text/html']
-    #swagger.responses[302] = { description: 'Redirect to the GitHub authorization page.' }
+    #swagger.description = 'Starts the OAuth handshake. A browser gets a page that goes to GitHub right away; GitHub sends it back to /auth/github/callback, which stores the user in the session and returns to the home page. Swagger UI and curl cannot follow a redirect that leaves this origin, so they get the same URL as JSON to open in a browser.'
+    #swagger.produces = ['text/html', 'application/json']
+    #swagger.responses[200] = { description: 'OK - A page that forwards to GitHub, or JSON with the URL to open.', schema: { $ref: '#/definitions/LoginUrl' } }
     #swagger.responses[400] = { description: 'Bad Request - This server is not the one registered as the OAuth callback.' }
     #swagger.responses[503] = { description: 'Service Unavailable - The GitHub OAuth credentials are not configured on the server.' }
     */
@@ -61,20 +93,37 @@ router.get('/github', (req, res, next) => {
         });
     }
 
-    return passport.authenticate('github', { scope: SCOPES })(req, res, next);
+    // Handing over a 302 would leave the origin and Swagger UI would report a
+    // CORS failure, so the browser gets a page that forwards by itself.
+    if (isBrowserNavigation(req)) {
+        return res.status(200).type('html').send(loginPage(getLoginUrl()));
+    }
+
+    return res.status(200).json({
+        message: 'Open this URL in a browser to log in with GitHub.',
+        loginUrl: getLoginUrl(),
+    });
 });
 
-router.get('/github/callback', (req, res, next) => {
+router.get('/github/callback', (req, res) => {
     /*
     #swagger.tags = ['Auth']
     #swagger.summary = 'GitHub OAuth callback'
     #swagger.description = 'The URL GitHub redirects to after the user authorizes the app. It saves the profile in the users collection, opens the session and redirects to the home page. Not called by hand.'
     #swagger.produces = ['text/html']
-    #swagger.responses[302] = { description: 'Redirect to the home page once the session is open.' }
+    #swagger.responses[302] = { description: 'Redirect to the home page once the session is open, or to the home page with login=failed when GitHub did not authorize.' }
     #swagger.responses[401] = { description: 'Unauthorized - GitHub did not return a valid authorization code.' }
     #swagger.responses[500] = { description: 'Internal Server Error' }
     */
-    return passport.authenticate('github', { failureRedirect: '/', session: true })(req, res, next);
+    // A failed handshake goes back to the home page with a notice instead of
+    // falling through to the 404 handler.
+    return passport.authenticate('github', { failureRedirect: '/?login=failed', session: true })(req, res, (err) => {
+        if (err) {
+            console.error('[auth] GitHub login failed:', err.message);
+            return res.redirect('/?login=failed');
+        }
+        return res.redirect('/');
+    });
 });
 
 router.get('/logout', (req, res, next) => {

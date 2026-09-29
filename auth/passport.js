@@ -12,8 +12,33 @@ const CALLBACK_URL = process.env.CALLBACK_URL;
 // Scopes: read:user for the public profile, user:email for the address.
 const SCOPES = ['read:user', 'user:email'];
 
+// Documented endpoint of GitHub, used to hand the URL to clients that cannot
+// follow a redirect out of this origin.
+const AUTHORIZE_URL = 'https://github.com/login/oauth/authorize';
+
 // Missing credentials should not take the whole API down, only the login.
 const isEnabled = Boolean(CLIENT_ID && CLIENT_SECRET && CALLBACK_URL);
+
+/**
+ * The exact URL a browser has to open to start the handshake. Swagger UI and
+ * curl cannot follow a redirect that leaves the origin, so they get this link
+ * as a JSON body and open it in a browser.
+ * @returns {string|null} the GitHub authorization URL, null when not configured
+ */
+const getLoginUrl = () => {
+    if (!isEnabled) {
+        return null;
+    }
+
+    const params = new URLSearchParams({
+        client_id: CLIENT_ID,
+        redirect_uri: CALLBACK_URL,
+        scope: SCOPES.join(' '),
+        response_type: 'code',
+    });
+
+    return `${AUTHORIZE_URL}?${params.toString()}`;
+};
 
 /**
  * Log in with GitHub, then mirror the GitHub profile into the users collection.
@@ -59,4 +84,4 @@ passport.deserializeUser(async (githubId, done) => {
     }
 });
 
-module.exports = { passport, isEnabled, SCOPES };
+module.exports = { passport, isEnabled, getLoginUrl, SCOPES };

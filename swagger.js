@@ -263,6 +263,19 @@ const doc = {
                 },
             },
         },
+        LoginUrl: {
+            description:
+                'The URL that starts the OAuth handshake. A browser is sent there right away, this is the same URL in JSON for the clients that cannot follow a redirect out of the origin.',
+            type: 'object',
+            properties: {
+                message: { type: 'string', example: 'Open this URL in a browser to log in with GitHub.' },
+                loginUrl: {
+                    type: 'string',
+                    example:
+                        'https://github.com/login/oauth/authorize?client_id=<client id>&redirect_uri=https%3A%2F%2Fproject2-shmi.onrender.com%2Fauth%2Fgithub%2Fcallback&scope=read%3Auser+user%3Aemail&response_type=code',
+                },
+            },
+        },
     },
 };
 

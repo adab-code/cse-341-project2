@@ -15,7 +15,10 @@ router.get('/', (req, res) => {
         ? `Signed in as ${req.user.displayName} (${req.user.username}). Log out: GET /auth/logout`
         : 'You are not logged in. Log in with GitHub: /auth/github';
 
-    res.send(`Welcome to the Plant Care API!\n\n${session}\nDocumentation: /api-docs`);
+    // GitHub sends the browser back here when it refuses or fails the handshake.
+    const notice = req.query.login === 'failed' ? '\nThe last GitHub login did not finish, try again from /auth/github.\n' : '';
+
+    res.send(`Welcome to the Plant Care API!\n\n${session}${notice}\nDocumentation: /api-docs`);
 });
 
 router.use('/auth', require('./auth'));
